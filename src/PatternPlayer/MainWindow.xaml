@@ -1,0 +1,161 @@
+<Window x:Class="PatternPlayer.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Pattern Player"
+        Icon="app.ico"
+        Width="860" Height="800"
+        MinWidth="800" MinHeight="760"
+        Background="{StaticResource PageBackground}"
+        Foreground="{StaticResource TextPrimary}"
+        WindowStartupLocation="Manual"
+        PreviewKeyDown="Window_PreviewKeyDown">
+    <ScrollViewer VerticalScrollBarVisibility="Auto"><Grid Margin="24">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="20"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="14"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="14"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <Grid Grid.Row="0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <StackPanel>
+                <TextBlock Text="PATTERN PLAYER" FontSize="22" FontWeight="SemiBold"/>
+                <TextBlock Text="LED Processorへのクリーン出力" Margin="0,4,0,0"
+                           Foreground="{StaticResource TextSecondary}" FontSize="13"/>
+            </StackPanel>
+            <Button Grid.Column="1" Content="動画を開く" Style="{StaticResource PrimaryButton}"
+                    Click="OpenFile_Click" Margin="8,0,0,0"/>
+        </Grid>
+
+        <Border Grid.Row="2" Background="{StaticResource PanelBackground}"
+                BorderBrush="{StaticResource PanelBorder}" BorderThickness="1"
+                CornerRadius="8" Padding="16">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="12"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Text="出力画面" VerticalAlignment="Center" Margin="0,0,16,0"
+                               Foreground="{StaticResource TextSecondary}"/>
+                    <WrapPanel x:Name="ScreenButtons" Grid.Column="1"/>
+                    <Button x:Name="FullscreenButton" Grid.Column="2" Content="全画面"
+                            Click="Fullscreen_Click" Margin="8,0,0,0"/>
+                </Grid>
+
+                <TextBlock x:Name="ScreenInfoText" Grid.Row="2"
+                           Foreground="{StaticResource TextSecondary}" FontSize="12"/>
+            </Grid>
+        </Border>
+
+        <Border Grid.Row="4" Background="{StaticResource PanelBackground}"
+                BorderBrush="{StaticResource PanelBorder}" BorderThickness="1"
+                CornerRadius="8" Padding="16">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="10"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+                <TextBlock Text="内蔵テストパターン" FontSize="14" FontWeight="SemiBold"/>
+                <WrapPanel Grid.Row="2">
+                    <Button Content="FHD 標準パターン" Tag="FHD_TestPattern.mp4"
+                            Click="BuiltInPattern_Click"/>
+                    <Button Content="UHD 標準パターン" Tag="UHD_TestPattern.mp4"
+                            Click="BuiltInPattern_Click"/>
+                    <Button Content="FHD Motion Color Bars" Tag="FHD_MotionColorBars.mp4"
+                            Click="BuiltInPattern_Click"/>
+                    <Button Content="UHD Motion Color Bars" Tag="UHD_MotionColorBars.mp4"
+                            Click="BuiltInPattern_Click"/>
+                </WrapPanel>
+            </Grid>
+        </Border>
+
+        <Border Grid.Row="6" Background="{StaticResource PanelBackground}"
+                BorderBrush="{StaticResource PanelBorder}" BorderThickness="1"
+                CornerRadius="8" Padding="18" MinHeight="176">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="20"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="20"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock x:Name="FileNameText" Text="動画が読み込まれていません" FontSize="16"
+                               FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
+                    <TextBlock x:Name="StateText" Grid.Column="1" Text="待機中"
+                               Foreground="{StaticResource TextSecondary}" Margin="16,0,0,0"/>
+                </Grid>
+
+                <Grid Grid.Row="2">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock x:Name="CurrentTimeText" Text="00:00" Width="52"
+                               VerticalAlignment="Center" Foreground="{StaticResource TextSecondary}"/>
+                    <Slider x:Name="TimelineSlider" Grid.Column="1" Minimum="0" Maximum="1"
+                            IsEnabled="False" Margin="6,0"
+                            PreviewMouseLeftButtonDown="Timeline_PreviewMouseLeftButtonDown"
+                            PreviewMouseLeftButtonUp="Timeline_PreviewMouseLeftButtonUp"/>
+                    <TextBlock x:Name="DurationText" Grid.Column="2" Text="00:00" Width="52"
+                               TextAlignment="Right" VerticalAlignment="Center"
+                               Foreground="{StaticResource TextSecondary}"/>
+                </Grid>
+
+                <StackPanel Grid.Row="4"><StackPanel Orientation="Horizontal" HorizontalAlignment="Center"
+                            VerticalAlignment="Center">
+                    <Button x:Name="PlayButton" Content="▶  再生" Click="Play_Click" IsEnabled="False"/>
+                    <Button x:Name="PauseButton" Content="Ⅱ  一時停止" Click="Pause_Click" IsEnabled="False"/>
+                    <CheckBox x:Name="LoopCheckBox" Content="Loop" IsChecked="True"
+                              Checked="Loop_Changed" Unchecked="Loop_Changed"/>
+                </StackPanel>
+<CheckBox x:Name="AudioCheckBox" Content="Audio Check" Margin="0,16,0,8" Checked="AudioCheck_Changed" Unchecked="AudioCheck_Changed"/>
+<Grid><Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+<TextBlock Text="音声出力" VerticalAlignment="Center" Margin="0,0,12,0"/>
+<ComboBox x:Name="AudioDeviceBox" Grid.Column="1" SelectionChanged="AudioDevice_Changed" MinHeight="32" Foreground="Black"/>
+<Button Grid.Column="2" Content="更新" Click="AudioRefresh_Click" Margin="8,0,0,0"/>
+</Grid>
+<TextBlock Text="HDMI / DisplayPort の音声デバイスを選択してください" FontSize="12" Margin="0,8,0,0" Foreground="{StaticResource TextSecondary}"/>
+</StackPanel>
+</Grid>
+        </Border>
+
+        <Grid Grid.Row="7" Margin="2,14,2,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <TextBlock x:Name="StatusText" Text="MP4またはMOVのテスト動画を開いてください"
+                       Foreground="{StaticResource TextSecondary}" FontSize="12"
+                       TextTrimming="CharacterEllipsis" Margin="0,0,16,0"/>
+            <TextBlock Grid.Column="1" HorizontalAlignment="Right"
+                       Text="Space: 再生／一時停止   F11: 全画面   Esc: 終了"
+                       Foreground="#687382" FontSize="12"/>
+        </Grid>
+    </Grid></ScrollViewer></Window>
+
+
