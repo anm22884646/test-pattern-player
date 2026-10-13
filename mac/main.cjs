@@ -3,6 +3,7 @@ const path=require('node:path');
 const fs=require('node:fs');
 const {pathToFileURL}=require('node:url');
 const crypto=require('node:crypto');
+const {Readable}=require('node:stream');
 protocol.registerSchemesAsPrivileged([{scheme:'pattern',privileges:{standard:true,secure:true,supportFetchAPI:true,stream:true}}]);
 app.commandLine.appendSwitch('autoplay-policy','no-user-gesture-required');
 let control,output,selected,full=false,blocker;
@@ -26,7 +27,13 @@ function create(){const primary=screen.getPrimaryDisplay();selected=(screen.getA
 }
 function setFullscreen(value){full=!!value;output.show();if(process.platform==='darwin'){if(output.isSimpleFullScreen())output.setSimpleFullScreen(false);position();if(full)output.setSimpleFullScreen(true);}else{output.setFullScreen(full);position();}position();control.focus();return full;}
 app.whenReady().then(()=>{
- protocol.handle('pattern',request=>{const id=new URL(request.url).pathname.slice(1);const file=files.get(id);if(!file)return new Response('Not found',{status:404});return net.fetch(pathToFileURL(file).href,{headers:request.headers});});
+ protocol.handle('pattern',request=>{
+ const id=new URL(request.url).pathname.slice(1),file=files.get(id);if(!file)return new Response('Not found',{status:404});
+ const size=fs.statSync(file).size,range=request.headers.get('range');let start=0,end=size-1,status=200;
+ const headers={'Content-Type':({'.mp4':'video/mp4','.m4v':'video/mp4','.mov':'video/quicktime','.webm':'video/webm','.mp3':'audio/mpeg'})[path.extname(file).toLowerCase()]||'application/octet-stream','Accept-Ranges':'bytes'};
+ if(range){const match=/^bytes=(\d*)-(\d*)$/.exec(range);if(!match||(!match[1]&&!match[2]))return new Response(null,{status:416,headers:{'Content-Range':`bytes */${size}`}});if(match[1]){start=Number(match[1]);if(match[2])end=Math.min(Number(match[2]),end);}else{start=Math.max(0,size-Number(match[2]));}if(start>=size||end<start)return new Response(null,{status:416,headers:{'Content-Range':`bytes */${size}`}});status=206;headers['Content-Range']=`bytes ${start}-${end}/${size}`;}
+ headers['Content-Length']=String(end-start+1);return new Response(request.method==='HEAD'?null:Readable.toWeb(fs.createReadStream(file,{start,end})),{status,headers});
+ });
  create();Menu.setApplicationMenu(Menu.buildFromTemplate([{label:'Pattern Player',submenu:[{role:'about'},{type:'separator'},{role:'quit'}]},{label:'表示',submenu:[{role:'minimize'}]}]));
  ipcMain.handle('init',event=>{if(!trusted(event,control))return;return {displays:{items:displays(),selected,fullscreen:full},patterns:['FHD_TestPattern.mp4','UHD_TestPattern.mp4','FHD_MotionColorBars.mp4','UHD_MotionColorBars.mp4'].map(n=>media(path.join(__dirname,'TestPatterns',n),n)),audio:media(path.join(__dirname,'Audio','TestingBeat.mp3'),'Testing Beat')};});
  ipcMain.handle('open',async event=>{if(!trusted(event,control))return;const result=await dialog.showOpenDialog(control,{title:'動画を開く',properties:['openFile'],filters:[{name:'動画',extensions:['mp4','mov','m4v','webm']}]});if(result.canceled)return null;return media(result.filePaths[0],path.basename(result.filePaths[0]));});

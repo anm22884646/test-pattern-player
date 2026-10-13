@@ -16,7 +16,9 @@ module.exports=async({app,control,output,media})=>{
  output.webContents.send('command',{type:'play'});await delay(700);
  const t=await output.webContents.executeJavaScript('active.currentTime');if(t<=0)throw Error('Playback did not advance');
  output.webContents.send('command',{type:'pause'});await delay(150);const paused=await output.webContents.executeJavaScript('active.currentTime');await delay(300);const after=await output.webContents.executeJavaScript('active.currentTime');if(Math.abs(after-paused)>0.05)throw Error('Pause failed');
- output.webContents.send('command',{type:'seek',time:1.5});await delay(300);const sought=await output.webContents.executeJavaScript('active.currentTime');if(Math.abs(sought-1.5)>0.1)throw Error('Seek failed');
+ output.webContents.send('command',{type:'seek',time:1.5});let sought;
+ for(let i=0;i<30;i++){await delay(100);sought=await output.webContents.executeJavaScript('({time:active.currentTime,seeking:active.seeking,seekable:active.seekable.length})');if(!sought.seeking&&Math.abs(sought.time-1.5)<0.1)break;}
+ if(sought.seeking||Math.abs(sought.time-1.5)>0.1)throw Error('Seek failed: '+JSON.stringify(sought));
  output.webContents.send('command',{type:'play'});await delay(150);const id=await output.webContents.executeJavaScript('active.id');await output.webContents.executeJavaScript('active.currentTime=active.duration-0.035');await delay(1500);const swapped=await output.webContents.executeJavaScript('({id:active.id,playing,time:active.currentTime,error})');if(swapped.id===id||!swapped.playing||swapped.time>3)throw Error('Loop swap failed: '+JSON.stringify(swapped));
  results.push({test:name,width:state.width,height:state.height,play:true,pause:true,seek:true,loop:true});
  }
