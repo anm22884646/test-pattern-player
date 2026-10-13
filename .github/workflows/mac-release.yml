@@ -1,0 +1,62 @@
+name: Build macOS Pattern Player
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'mac/**'
+      - '.github/workflows/mac-release.yml'
+permissions:
+  contents: write
+concurrency:
+  group: pattern-player-mac-release
+  cancel-in-progress: false
+jobs:
+  build:
+    runs-on: macos-15
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Restore built-in media from verified Windows release
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import hashlib,pathlib,urllib.request,zipfile
+          p=pathlib.Path('windows-release.zip')
+          urllib.request.urlretrieve('https://github.com/anm22884646/test-pattern-player/releases/download/v0.3.0/PatternPlayer-v0.3.0-win-x64.zip',p)
+          assert hashlib.file_digest(open(p,'rb'),'sha256').hexdigest()=='8d20587d55e020d4834df0acf8e9a605cefb055f386d3ca0a62ee57880393316'
+          with zipfile.ZipFile(p) as z:
+            for i in z.infolist():
+              parts=pathlib.PurePosixPath(i.filename).parts
+              if len(parts)==3 and parts[1] in ['Audio','TestPatterns'] and not i.is_dir():
+                dest=pathlib.Path('mac')/parts[1]/parts[2]
+                dest.parent.mkdir(parents=True,exist_ok=True)
+                dest.write_bytes(z.read(i))
+          PY
+      - name: Package and ad-hoc sign Apple Silicon and Intel applications
+        run: python3 mac/build-mac.py --arch both --output dist
+      - name: Native macOS playback smoke test
+        shell: bash
+        run: |
+          export PATTERN_SMOKE_RESULTS="$PWD/dist/smoke-macos.json"
+          "dist/stage-arm64/Pattern Player.app/Contents/MacOS/Electron" --smoke-test
+          python3 -c 'import json; assert json.load(open("dist/smoke-macos.json"))["ok"]'
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: PatternPlayer-mac-build
+          path: |
+            dist/*.zip
+            dist/smoke-macos.json
+      - name: Publish Mac release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          if gh release view v0.4.0 >/dev/null 2>&1; then
+            gh release upload v0.4.0 dist/PatternPlayer-v0.4.0-mac-arm64.zip dist/PatternPlayer-v0.4.0-mac-x64.zip
+          else
+            gh release create v0.4.0 dist/PatternPlayer-v0.4.0-mac-arm64.zip dist/PatternPlayer-v0.4.0-mac-x64.zip --target "$GITHUB_SHA" --title "Pattern Player v0.4.0 — macOS" --notes-file mac/RELEASE-NOTES.md
+          fi

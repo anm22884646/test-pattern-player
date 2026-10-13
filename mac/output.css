@@ -1,0 +1,1 @@
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#000;cursor:none}video{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;opacity:0;background:#000}video.active{opacity:1}

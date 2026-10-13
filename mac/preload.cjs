@@ -1,0 +1,2 @@
+const {contextBridge,ipcRenderer}=require('electron');
+contextBridge.exposeInMainWorld('player',{init:()=>ipcRenderer.invoke('init'),open:()=>ipcRenderer.invoke('open'),display:id=>ipcRenderer.invoke('display',id),fullscreen:value=>ipcRenderer.invoke('fullscreen',value),command:data=>ipcRenderer.send('command',data),status:data=>ipcRenderer.send('status',data),on:(channel,fn)=>{if(['command','status','displays','output-hidden'].includes(channel))ipcRenderer.on(channel,(_event,data)=>fn(data));}});
